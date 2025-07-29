@@ -12,9 +12,9 @@ define_syscall!(fn sol_get_greet_sysvar(addr: *mut u8) -> u64);
 
 2. Implement Greet sysvar in solana-sdk repo
 
-2.1 ``` cargo init greet```
-2.2 In src file rename main.rs to lib.rs and make new file sysvar.rs
-2.3 In cargo.toml add this
+- ``` cargo init greet```
+- In src file rename main.rs to lib.rs and make new file sysvar.rs
+- In cargo.toml add this
 ```
 [package]
 name = "solana-greet"
@@ -43,7 +43,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 all-features = true
 rustdoc-args = ["--cfg=docsrs"]
 ```
-2.4 In lib.rs add this 
+- In lib.rs add this 
 ```
 //! Information about the last restart slot (hard fork).
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
@@ -69,10 +69,118 @@ impl Default for Greet {
     }
 }
 ```
-2.5 In sysvar.rs add this
+- In sysvar.rs add this
 ```
 pub use solana_sdk_ids::sysvar::greet::{check_id, id, ID};
 use {crate::Greet, solana_sysvar_id::impl_sysvar_id};
 
 impl_sysvar_id!(Greet);
 ```
+
+3. Include sysvar in [solana-sdk/program]()
+```
+solana_sysvar::greet
+```
+
+4. Define the id of sysvar in [solana-sdk/sdk-ids]()
+```
+pub mod greet {
+    solana_pubkey::declare_id!("SysvarGreet11111111111111111111111111111111");
+}
+```
+
+5. Add **greet.rs** in [solana-sdk/sysvar]()
+```
+//! The greet sysvar provides greeting ie "GM GM" 
+//!
+//! [`Greet`] implements [`Sysvar::get`] and can be loaded efficiently without
+//! passing the sysvar account ID to the program.
+//!
+//! See also the Solana [SIMD proposal][simd].
+//!
+//! [simd]: https://github.com/solana-foundation/solana-improvement-documents/blob/main/proposals/0047-syscall-and-sysvar-for-last-restart-slot.md
+//!
+//! # Examples
+//!
+//! Accessing via on-chain program directly:
+//!
+//! ```no_run
+//! # use solana_account_info::AccountInfo;
+//! # use solana_msg::msg;
+//! # use solana_sysvar::Sysvar;
+//! # use solana_program_error::ProgramResult;
+//! # use solana_pubkey::Pubkey;
+//! # use solana_greet::Greet;
+//!
+//! fn process_instruction(
+//!     program_id: &Pubkey,
+//!     accounts: &[AccountInfo],
+//!     instruction_data: &[u8],
+//! ) -> ProgramResult {
+//!
+//!     let greet = Greet::get();
+//!     msg!("last restart slot: {:?}", greet.greeting);
+//!
+//!     Ok(())
+//! }
+//! ```
+//!
+#[cfg(feature = "bincode")]
+use crate::SysvarSerialize;
+use crate::{impl_sysvar_get, Sysvar};
+pub use {
+    solana_greet::Greet,
+    solana_sdk_ids::sysvar::greet::{check_id, id, ID},
+};
+
+impl Sysvar for Greet {
+    impl_sysvar_get!(sol_get_greet_sysvar);
+}
+
+// #[cfg(feature = "bincode")]
+// impl SysvarSerialize for Greet {}
+``` 
+Add this file in [cargo.toml]()
+```
+solana-greet = { workspace = true, features = ["sysvar"] }
+```
+and also in [lib.rs]()
+```
+pub mod greet;
+```
+
+
+6. Finally Implement syscall stubs [program.rs]()
+```
+fn sol_get_greet_sysvar(&self, _var_addr: *mut u8) -> u64 {
+    UNSUPPORTED_SYSVAR
+}
+```
+```
+pub(crate) fn sol_get_greet_sysvar(var_addr: *mut u8) -> u64 {
+    SYSCALL_STUBS.read().unwrap().sol_get_greet_sysvar(var_addr)
+}
+```
+
+## Sample Usage
+Now as all the setup is completed, add these dependencies to your solana program.
+```
+use solana_program::sysvar::greet::Greet;
+
+pub fn process_instruction_with_greet() -> u64 {
+    let greet = Greet::default();
+    println!("{}", greet.greeting);
+    0
+}
+
+#[test]
+fn test_process_instruction_with_greet() {
+    // let greet = Greet { greeting: "Gm Gm".to_string() };
+    let output = process_instruction_with_greet();
+    assert_eq!(output, 0);
+}
+```
+Run test if its successfull then you are good to go, if not then brainstorm in it what cause the error how can i solve it, or else you can contact me anytime 
+**discord** - _kavyam
+
+### Note - This project is just meant for study purpose only dont expect it'll work in mainnet
