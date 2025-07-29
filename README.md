@@ -5,7 +5,7 @@ This repository contains a custom sysvar implementation for the Solana blockchai
 Same as custom syscall setup you need to clone the [Agave](https://github.com/anza-xyz/agave.git), [solana-sdk](https://github.com/anza-xyz/solana-sdk), [system](https://github.com/solana-program/system), [stake](https://github.com/solana-program/stake)
 
 ## Implementation
-1. Define syscall in [solana-sdk/define-syscall]()
+1. Define syscall in [solana-sdk/define-syscall](https://github.com/Kym0211/solana-sdk/blob/master/define-syscall/src/definitions.rs#L42)
 ```
 define_syscall!(fn sol_get_greet_sysvar(addr: *mut u8) -> u64);
 ```
@@ -77,19 +77,19 @@ use {crate::Greet, solana_sysvar_id::impl_sysvar_id};
 impl_sysvar_id!(Greet);
 ```
 
-3. Include sysvar in [solana-sdk/program]()
+3. Include sysvar in [solana-sdk/program](https://github.com/Kym0211/solana-sdk/blob/bd0c1f0ad2ecd92542e63e0ce14508cc5d06d61c/program/src/sysvar.rs#L8)
 ```
 solana_sysvar::greet
 ```
 
-4. Define the id of sysvar in [solana-sdk/sdk-ids]()
+4. Define the id of sysvar in [solana-sdk/sdk-ids](https://github.com/Kym0211/solana-sdk/blob/master/sdk-ids/src/lib.rs#L83-L85)
 ```
 pub mod greet {
     solana_pubkey::declare_id!("SysvarGreet11111111111111111111111111111111");
 }
 ```
 
-5. Add **greet.rs** in [solana-sdk/sysvar]()
+5. Add **greet.rs** in [solana-sdk/sysvar](https://github.com/Kym0211/solana-sdk/blob/master/sysvar/src/greet.rs)
 ```
 //! The greet sysvar provides greeting ie "GM GM" 
 //!
@@ -140,27 +140,29 @@ impl Sysvar for Greet {
 // #[cfg(feature = "bincode")]
 // impl SysvarSerialize for Greet {}
 ``` 
-Add this file in [cargo.toml]()
+Add this line in [cargo.toml](https://github.com/Kym0211/solana-sdk/blob/master/sysvar/Cargo.toml#L57)
 ```
 solana-greet = { workspace = true, features = ["sysvar"] }
 ```
-and also in [lib.rs]()
+and also in [lib.rs](https://github.com/Kym0211/solana-sdk/blob/master/sysvar/src/lib.rs#L102)
 ```
 pub mod greet;
 ```
 
 
-6. Finally Implement syscall stubs [program.rs]()
+6. Finally Implement syscall stubs in `solana-sdk/sysvar`
 ```
 fn sol_get_greet_sysvar(&self, _var_addr: *mut u8) -> u64 {
     UNSUPPORTED_SYSVAR
 }
 ```
+[Code Link](https://github.com/Kym0211/solana-sdk/blob/master/sysvar/src/program_stubs.rs#L75-L77)
 ```
 pub(crate) fn sol_get_greet_sysvar(var_addr: *mut u8) -> u64 {
     SYSCALL_STUBS.read().unwrap().sol_get_greet_sysvar(var_addr)
 }
 ```
+[Code Link](https://github.com/Kym0211/solana-sdk/blob/master/sysvar/src/program_stubs.rs#L190-L192)
 
 ## Sample Usage
 Now as all the setup is completed, add these dependencies to your solana program.
